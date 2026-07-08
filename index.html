@@ -2491,6 +2491,25 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     private: '201275311174'
   };
 
+  // Google Sheet endpoint (Apps Script Web App URL)
+  const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxYFOriDGrvHdOmbrvoxrpfKKiczTGC_-m8Zrb65mbTWZIFiB-NnllbOfWWxt7oEYU5/exec';
+
+  // Send booking data to Google Sheet (fire-and-forget, never blocks WhatsApp)
+  function sendToSheet(payload){
+    try{
+      fetch(SHEET_ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors', // Apps Script doesn't return CORS headers; we don't need to read the response
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+        body: JSON.stringify(payload)
+      }).catch(function(err){
+        console.warn('Sheet logging failed (booking still proceeds):', err);
+      });
+    }catch(err){
+      console.warn('Sheet logging failed (booking still proceeds):', err);
+    }
+  }
+
   let lastFocused = null;
 
   // Open modal
@@ -2625,6 +2644,16 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 
     const phoneNum = PHONES[locValue] || '201275311174';
     const url = `https://wa.me/${phoneNum}?text=${encodeURIComponent(msg)}`;
+
+    // Log to Google Sheet (doesn't block or delay WhatsApp opening)
+    sendToSheet({
+      name: name,
+      phone: phone,
+      school: school,
+      grade: grade,
+      location: locValue,
+      locationLabel: locLabels[locValue] || locValue
+    });
 
     // Open WhatsApp
     window.open(url, '_blank', 'noopener');
